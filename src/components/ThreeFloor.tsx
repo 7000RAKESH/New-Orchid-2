@@ -269,16 +269,21 @@ const ThreeFloor = forwardRef<FloorRef, Props>(function ThreeFloor(
     animate();
     animFrameRef.current = frameId!;
 
-    // Resize
-    const ro = new ResizeObserver(() => {
-      if (!mountRef.current) return;
-      const w = mountRef.current.clientWidth;
-      const h = mountRef.current.clientHeight;
-      renderer.setSize(w, h);
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-    });
-    ro.observe(mountRef.current);
+      // Resize — debounce via rAF to avoid ResizeObserver loop warnings
+      let resizeRaf: number | undefined;
+      const ro = new ResizeObserver(() => {
+        if (resizeRaf) cancelAnimationFrame(resizeRaf);
+        resizeRaf = requestAnimationFrame(() => {
+          if (!mountRef.current) return;
+          const w = mountRef.current.clientWidth;
+          const h = mountRef.current.clientHeight;
+          if (w === 0 || h === 0) return;
+          renderer.setSize(w, h);
+          camera.aspect = w / h;
+          camera.updateProjectionMatrix();
+        });
+      });
+      ro.observe(mountRef.current);
 
     return () => {
       cancelAnimationFrame(frameId);
