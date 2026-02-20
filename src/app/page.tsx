@@ -8,6 +8,8 @@ import CubicleStack from '@/components/CubicleStack';
 import dynamic from 'next/dynamic';
 import { CubicleData, INITIAL_CUBICLES } from '@/lib/cubicleData';
 import type { FloorRef } from '@/components/ThreeFloor';
+import { ChevronLeft, ChevronRight, Layers } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Dynamically import the Three.js floor (SSR=false, WebGL requires browser)
 const ThreeFloor = dynamic(() => import('@/components/ThreeFloor'), { ssr: false });
@@ -17,6 +19,7 @@ let nextCubicleNum = 7;
 function Dashboard() {
   const [cubicles, setCubicles] = useState<CubicleData[]>(INITIAL_CUBICLES);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [stackVisible, setStackVisible] = useState(true);
   const floorRef = useRef<FloorRef>(null);
   const floorDivRef = useRef<HTMLDivElement>(null) as React.RefObject<HTMLDivElement>;
 
@@ -56,6 +59,8 @@ function Dashboard() {
       rotationY: 0,
     };
     setCubicles(prev => [...prev, newCubicle]);
+    // Auto-show stack when a new cubicle is added
+    setStackVisible(true);
   }, []);
 
   // Called by CubicleStack when a card is dropped onto the floor area
@@ -76,6 +81,8 @@ function Dashboard() {
     floorRef.current?.handleDrop(id, e.clientX, e.clientY);
   }, []);
 
+  const unplacedCount = cubicles.filter(c => !c.placed).length;
+
   return (
     <div
       className="min-h-screen flex flex-col"
@@ -91,7 +98,7 @@ function Dashboard() {
 
       {/* Dashboard: 3-column layout */}
       <div
-        className="flex flex-1 overflow-hidden"
+        className="flex flex-1 overflow-hidden relative"
         style={{ height: 'calc(100vh - 72px - 178px)', minHeight: 520 }}
       >
         {/* LEFT: Activity Panel */}
@@ -133,17 +140,61 @@ function Dashboard() {
             onReturnToStack={handleReturnToStack}
             selectedId={selectedId}
           />
+
+          {/* Stack toggle button — floats on the right edge of the floor */}
+          <motion.button
+            whileTap={{ scale: 0.94 }}
+            onClick={() => setStackVisible(v => !v)}
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-1.5 py-3 px-2 rounded-l-2xl"
+            style={{
+              background: 'var(--ipqc-surface)',
+              border: '1px solid var(--ipqc-border)',
+              borderRight: 'none',
+              boxShadow: '-4px 0 16px rgba(0,0,0,0.08)',
+              color: 'var(--ipqc-accent)',
+            }}
+            title={stackVisible ? 'Hide cubicle stack' : 'Show cubicle stack'}
+          >
+            <Layers size={16} style={{ color: 'var(--ipqc-accent)' }} />
+            {/* Badge showing unplaced count */}
+            {unplacedCount > 0 && (
+              <span
+                className="text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center"
+                style={{ background: 'var(--ipqc-accent)', color: '#fff' }}
+              >
+                {unplacedCount}
+              </span>
+            )}
+            {stackVisible
+              ? <ChevronRight size={14} style={{ color: 'var(--ipqc-text-muted)' }} />
+              : <ChevronLeft size={14} style={{ color: 'var(--ipqc-text-muted)' }} />
+            }
+          </motion.button>
         </div>
 
-        {/* RIGHT: Cubicle stack */}
-        <div className="w-[220px] flex-shrink-0 overflow-hidden">
-          <CubicleStack
-            cubicles={cubicles}
-            onDrop={handleStackDrop}
-            onAddCubicle={handleAddCubicle}
-            floorRef={floorDivRef}
-          />
-        </div>
+        {/* RIGHT: Cubicle stack — animated slide in/out */}
+        <AnimatePresence initial={false}>
+          {stackVisible && (
+            <motion.div
+              key="stack"
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: 220, opacity: 1 }}
+              exit={{ width: 0, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              className="flex-shrink-0 overflow-hidden"
+              style={{ minWidth: 0 }}
+            >
+              <div style={{ width: 220 }}>
+                <CubicleStack
+                  cubicles={cubicles}
+                  onDrop={handleStackDrop}
+                  onAddCubicle={handleAddCubicle}
+                  floorRef={floorDivRef}
+                />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Mobile activity panel (shown below floor on small screens) */}
