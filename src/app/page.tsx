@@ -1,65 +1,167 @@
-import Image from "next/image";
+'use client';
+import { useRef, useState, useCallback } from 'react';
+import { ThemeProvider } from '@/components/ThemeProvider';
+import Ribbon from '@/components/Ribbon';
+import MenuBar from '@/components/MenuBar';
+import ActivityPanel from '@/components/ActivityPanel';
+import CubicleStack from '@/components/CubicleStack';
+import dynamic from 'next/dynamic';
+import { CubicleData, INITIAL_CUBICLES } from '@/lib/cubicleData';
+import type { FloorRef } from '@/components/ThreeFloor';
+
+// Dynamically import the Three.js floor (SSR=false, WebGL requires browser)
+const ThreeFloor = dynamic(() => import('@/components/ThreeFloor'), { ssr: false });
+
+let nextCubicleNum = 7;
+
+function Dashboard() {
+  const [cubicles, setCubicles] = useState<CubicleData[]>(INITIAL_CUBICLES);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const floorRef = useRef<FloorRef>(null);
+  const floorDivRef = useRef<HTMLDivElement>(null) as React.RefObject<HTMLDivElement>;
+
+  const selectedCubicle = cubicles.find(c => c.id === selectedId) ?? null;
+
+  const handleCubicleUpdate = useCallback((updated: CubicleData) => {
+    setCubicles(prev => prev.map(c => c.id === updated.id ? updated : c));
+  }, []);
+
+  const handleCubicleSelect = useCallback((id: string | null) => {
+    setSelectedId(id);
+  }, []);
+
+  const handleReturnToStack = useCallback((id: string) => {
+    setCubicles(prev => prev.map(c =>
+      c.id === id ? { ...c, placed: false, position: [0, 0, 0] } : c
+    ));
+    setSelectedId(prev => prev === id ? null : prev);
+  }, []);
+
+  const handleAddCubicle = useCallback(() => {
+    const n = nextCubicleNum++;
+    const newColors = ['#7c3aed', '#2563eb', '#0f766e', '#b45309', '#0369a1', '#7e22ce', '#15803d', '#c2410c'];
+    const col = newColors[(n - 1) % newColors.length];
+    const newCubicle: CubicleData = {
+      id: `c${n}`,
+      name: `Cubicle ${n}`,
+      instruments: [],
+      equipment: [],
+      employees: [],
+      status: 'available',
+      color: col,
+      placed: false,
+      position: [0, 0, 0],
+      width: 3,
+      depth: 3,
+      rotationY: 0,
+    };
+    setCubicles(prev => [...prev, newCubicle]);
+  }, []);
+
+  // Called by CubicleStack when a card is dropped onto the floor area
+  const handleStackDrop = useCallback((id: string, screenX: number, screenY: number) => {
+    floorRef.current?.handleDrop(id, screenX, screenY);
+  }, []);
+
+  // Handle native HTML5 drag drop onto the floor div
+  const handleFloorDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  }, []);
+
+  const handleFloorDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    const id = e.dataTransfer.getData('cubicleId');
+    if (!id) return;
+    floorRef.current?.handleDrop(id, e.clientX, e.clientY);
+  }, []);
+
+  return (
+    <div
+      className="min-h-screen flex flex-col"
+      style={{ background: 'var(--ipqc-bg)', fontFamily: 'Inter, sans-serif' }}
+    >
+      {/* Fixed ribbon at top */}
+      <Ribbon />
+
+      {/* Menu bar below ribbon */}
+      <div className="pt-[72px]">
+        <MenuBar />
+      </div>
+
+      {/* Dashboard: 3-column layout */}
+      <div
+        className="flex flex-1 overflow-hidden"
+        style={{ height: 'calc(100vh - 72px - 178px)', minHeight: 520 }}
+      >
+        {/* LEFT: Activity Panel */}
+        <div className="w-[220px] flex-shrink-0 overflow-hidden hidden lg:block">
+          <ActivityPanel
+            selectedCubicle={selectedCubicle}
+            allCubicles={cubicles}
+            onClose={() => setSelectedId(null)}
+          />
+        </div>
+
+        {/* CENTER: 3D floor */}
+        <div
+          ref={floorDivRef}
+          className="flex-1 overflow-hidden relative"
+          style={{ background: 'var(--ipqc-floor-bg)' }}
+          onDragOver={handleFloorDragOver}
+          onDrop={handleFloorDrop}
+        >
+          {/* Section label */}
+          <div
+            className="absolute top-3 left-1/2 -translate-x-1/2 z-10 px-4 py-1.5 rounded-full text-xs font-semibold tracking-widest uppercase"
+            style={{
+              background: 'var(--ipqc-panel-bg)',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid var(--ipqc-border)',
+              color: 'var(--ipqc-text-muted)',
+              pointerEvents: 'none',
+            }}
+          >
+            3D Manufacturing Floor &mdash; Digital Twin
+          </div>
+
+          <ThreeFloor
+            ref={floorRef}
+            cubicles={cubicles}
+            onCubicleUpdate={handleCubicleUpdate}
+            onCubicleSelect={handleCubicleSelect}
+            onReturnToStack={handleReturnToStack}
+            selectedId={selectedId}
+          />
+        </div>
+
+        {/* RIGHT: Cubicle stack */}
+        <div className="w-[220px] flex-shrink-0 overflow-hidden">
+          <CubicleStack
+            cubicles={cubicles}
+            onDrop={handleStackDrop}
+            onAddCubicle={handleAddCubicle}
+            floorRef={floorDivRef}
+          />
+        </div>
+      </div>
+
+      {/* Mobile activity panel (shown below floor on small screens) */}
+      <div className="lg:hidden px-4 pb-4">
+        <ActivityPanel
+          selectedCubicle={selectedCubicle}
+          allCubicles={cubicles}
+          onClose={() => setSelectedId(null)}
+        />
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <ThemeProvider>
+      <Dashboard />
+    </ThemeProvider>
   );
 }

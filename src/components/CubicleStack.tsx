@@ -1,8 +1,8 @@
 'use client';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, GripVertical, Users, Wrench, Circle } from 'lucide-react';
-import { CubicleData, STATUS_COLORS, STATUS_LABELS, CubicleStatus } from '@/lib/cubicleData';
+import { CubicleData, STATUS_COLORS, STATUS_LABELS } from '@/lib/cubicleData';
 
 interface Props {
   cubicles: CubicleData[];
@@ -11,13 +11,11 @@ interface Props {
   floorRef: React.RefObject<HTMLDivElement>;
 }
 
-const STATUS_OPTIONS: CubicleStatus[] = ['available', 'in-use', 'not-available'];
-
 export default function CubicleStack({ cubicles, onDrop, onAddCubicle, floorRef }: Props) {
   const stackCubicles = cubicles.filter(c => !c.placed);
   const [draggingId, setDraggingId] = useState<string | null>(null);
 
-  const handleDragStart = (e: React.DragEvent, id: string) => {
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, id: string) => {
     e.dataTransfer.setData('cubicleId', id);
     e.dataTransfer.effectAllowed = 'move';
     setDraggingId(id);
@@ -74,65 +72,69 @@ export default function CubicleStack({ cubicles, onDrop, onAddCubicle, floorRef 
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
               transition={{ delay: i * 0.05 }}
-              draggable
-              onDragStart={e => handleDragStart(e, c.id)}
-              onDragEnd={handleDragEnd}
-              className="rounded-2xl overflow-hidden select-none"
-              style={{
-                background: draggingId === c.id ? 'var(--ipqc-accent-ultra-light)' : 'var(--ipqc-surface)',
-                border: draggingId === c.id
-                  ? '1.5px solid var(--ipqc-border-strong)'
-                  : '1.5px solid var(--ipqc-border)',
-                boxShadow: 'var(--ipqc-card-shadow)',
-                opacity: draggingId === c.id ? 0.6 : 1,
-                cursor: 'grab',
-              }}
             >
-              {/* Color bar */}
-              <div className="h-1 w-full" style={{ background: c.color }} />
+              {/* Separate draggable div to avoid framer-motion event type conflicts */}
+              <div
+                draggable
+                onDragStart={(e) => handleDragStart(e, c.id)}
+                onDragEnd={handleDragEnd}
+                className="rounded-2xl overflow-hidden select-none"
+                style={{
+                  background: draggingId === c.id ? 'var(--ipqc-accent-ultra-light)' : 'var(--ipqc-surface)',
+                  border: draggingId === c.id
+                    ? '1.5px solid var(--ipqc-border-strong)'
+                    : '1.5px solid var(--ipqc-border)',
+                  boxShadow: 'var(--ipqc-card-shadow)',
+                  opacity: draggingId === c.id ? 0.6 : 1,
+                  cursor: 'grab',
+                }}
+              >
+                {/* Color bar */}
+                <div className="h-1 w-full" style={{ background: c.color }} />
 
-              <div className="p-3">
-                {/* Name row */}
-                <div className="flex items-center gap-2 mb-2">
-                  <GripVertical size={14} style={{ color: 'var(--ipqc-text-muted)', flexShrink: 0 }} />
-                  <div
-                    className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0"
-                    style={{ background: c.color + '22' }}
-                  >
-                    <span className="text-[10px] font-bold" style={{ color: c.color }}>
-                      {c.id.replace('c', '')}
+                <div className="p-3">
+                  {/* Name row */}
+                  <div className="flex items-center gap-2 mb-2">
+                    <GripVertical size={14} style={{ color: 'var(--ipqc-text-muted)', flexShrink: 0 }} />
+                    <div
+                      className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0"
+                      style={{ background: c.color + '22' }}
+                    >
+                      <span className="text-[10px] font-bold" style={{ color: c.color }}>
+                        {c.id.replace('c', '')}
+                      </span>
+                    </div>
+                    <span className="font-semibold text-sm flex-1" style={{ color: 'var(--ipqc-text-primary)' }}>
+                      {c.name}
+                    </span>
+                    {/* Status dot */}
+                    <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: STATUS_COLORS[c.status] }} />
+                  </div>
+
+                  {/* Stats row */}
+                  <div className="flex items-center gap-3 text-[11px]" style={{ color: 'var(--ipqc-text-muted)' }}>
+                    <span className="flex items-center gap-1">
+                      <Wrench size={11} />
+                      {c.instruments.length} inst.
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Users size={11} />
+                      {c.employees.length} staff
                     </span>
                   </div>
-                  <span className="font-semibold text-sm flex-1" style={{ color: 'var(--ipqc-text-primary)' }}>
-                    {c.name}
-                  </span>
-                  {/* Status dot */}
-                  <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: STATUS_COLORS[c.status] }} />
-                </div>
 
-                {/* Stats row */}
-                <div className="flex items-center gap-3 text-[11px]" style={{ color: 'var(--ipqc-text-muted)' }}>
-                  <span className="flex items-center gap-1">
-                    <Wrench size={11} />
-                    {c.instruments.length} inst.
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Users size={11} />
-                    {c.employees.length} staff
-                  </span>
-                </div>
-
-                {/* Status badge */}
-                <div className="mt-2">
-                  <span
-                    className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                    style={{
-                      background: STATUS_COLORS[c.status] + '20',
-                      color: STATUS_COLORS[c.status],
-                    }}
-                  >
-                    {STATUS_LABELS[c.status]}
-                  </span>
+                  {/* Status badge */}
+                  <div className="mt-2">
+                    <span
+                      className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                      style={{
+                        background: STATUS_COLORS[c.status] + '20',
+                        color: STATUS_COLORS[c.status],
+                      }}
+                    >
+                      {STATUS_LABELS[c.status]}
+                    </span>
+                  </div>
                 </div>
               </div>
             </motion.div>

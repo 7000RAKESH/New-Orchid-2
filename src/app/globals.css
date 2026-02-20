@@ -115,11 +115,51 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    box-sizing: border-box;
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    overflow-x: hidden;
+  }
+  html {
+    scroll-behavior: smooth;
   }
 }
+
+/* IPQC default theme variables (lavender) — overridden by JS ThemeProvider */
+:root {
+  --ipqc-bg: #f8f7ff;
+  --ipqc-bg-secondary: #f0eeff;
+  --ipqc-surface: #ffffff;
+  --ipqc-surface-hover: #f3f0ff;
+  --ipqc-border: #e2daf8;
+  --ipqc-border-strong: #c4b5f4;
+  --ipqc-accent: #7c3aed;
+  --ipqc-accent-light: #a78bfa;
+  --ipqc-accent-ultra-light: #ede9fe;
+  --ipqc-accent-glow: rgba(124,58,237,0.18);
+  --ipqc-text-primary: #1e1b4b;
+  --ipqc-text-secondary: #4c1d95;
+  --ipqc-text-muted: #7c6fb0;
+  --ipqc-ribbon-bg: #ffffff;
+  --ipqc-ribbon-border: #ddd6fe;
+  --ipqc-menu-shadow: 0 4px 24px rgba(124,58,237,0.10);
+  --ipqc-card-shadow: 0 2px 16px rgba(124,58,237,0.08);
+  --ipqc-floor-bg: #f3f0ff;
+  --ipqc-grid-color: rgba(167,139,250,0.30);
+  --ipqc-panel-bg: rgba(255,255,255,0.88);
+  --ipqc-floor-grid: #c4b5f4;
+}
+
+/* Smooth scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--ipqc-border-strong); border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: var(--ipqc-accent-light); }
+
+/* Prevent text selection during drag */
+.select-none { user-select: none; }
 
 /* Hide Next.js error overlay portal */
 nextjs-portal {

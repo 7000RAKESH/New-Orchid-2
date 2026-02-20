@@ -46,13 +46,13 @@ const ThreeFloor = forwardRef<FloorRef, Props>(function ThreeFloor(
   ref
 ) {
   const mountRef = useRef<HTMLDivElement>(null);
-  const sceneRef = useRef<THREE.Scene>();
-  const cameraRef = useRef<THREE.PerspectiveCamera>();
-  const rendererRef = useRef<THREE.WebGLRenderer>();
+  const sceneRef = useRef<THREE.Scene | undefined>(undefined);
+  const cameraRef = useRef<THREE.PerspectiveCamera | undefined>(undefined);
+  const rendererRef = useRef<THREE.WebGLRenderer | undefined>(undefined);
   const raycasterRef = useRef(new THREE.Raycaster());
-  const floorMeshRef = useRef<THREE.Mesh>();
+  const floorMeshRef = useRef<THREE.Mesh | undefined>(undefined);
   const cubicleObjectsRef = useRef<Map<string, THREE.Group>>(new Map());
-  const animFrameRef = useRef<number>();
+  const animFrameRef = useRef<number | undefined>(undefined);
   const isDraggingRef = useRef(false);
   const dragTargetRef = useRef<string | null>(null);
   const dragPlaneRef = useRef(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0));
