@@ -35,37 +35,33 @@ export default function Ribbon() {
     >
       {/* Logo + Brand */}
       <div className="flex items-center gap-3 flex-shrink-0">
-        {/* Logo mark */}
-        <div
-          className="relative flex items-center justify-center rounded-xl"
-          style={{
-            width: 46,
-            height: 46,
-            background: 'linear-gradient(135deg, var(--ipqc-accent) 0%, var(--ipqc-accent-light) 100%)',
-            boxShadow: '0 4px 14px var(--ipqc-accent-glow)',
-          }}
-        >
-          <FlaskConical size={24} color="#fff" strokeWidth={1.8} />
-          {/* Lab beaker accent dot */}
-          <span
-            className="absolute top-1 right-1 w-2 h-2 rounded-full"
-            style={{ background: '#fff', opacity: 0.7 }}
+        {/* Lab Iconics logo image */}
+          <Image
+            src="/lab-iconics-logo.png"
+            alt="Lab Iconics"
+            width={160}
+            height={44}
+            priority
+            style={{ objectFit: 'contain', height: 44, width: 'auto' }}
           />
-        </div>
-        <div className="flex flex-col leading-tight">
-          <span
-            className="font-bold text-[17px] tracking-wide"
-            style={{ color: 'var(--ipqc-text-primary)', fontFamily: 'Inter, sans-serif' }}
-          >
-            Lab Iconics
-          </span>
-          <span
-            className="text-[11px] font-semibold tracking-[0.18em] uppercase"
-            style={{ color: 'var(--ipqc-accent-light)' }}
-          >
-            IPQC
-          </span>
-        </div>
+          <div
+            className="h-7 w-px mx-1 flex-shrink-0"
+            style={{ background: 'var(--ipqc-border)' }}
+          />
+          <div className="flex flex-col leading-tight">
+            <span
+              className="text-[11px] font-bold tracking-[0.22em] uppercase"
+              style={{ color: 'var(--ipqc-accent)' }}
+            >
+              IPQC
+            </span>
+            <span
+              className="text-[10px] tracking-wide"
+              style={{ color: 'var(--ipqc-text-muted)' }}
+            >
+              In-Process QC
+            </span>
+          </div>
       </div>
 
       {/* Center spacer + title */}
