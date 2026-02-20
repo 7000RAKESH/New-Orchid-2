@@ -497,20 +497,42 @@ const ThreeFloor = forwardRef<FloorRef, Props>(function ThreeFloor(
   useImperativeHandle(ref, () => ({
     handleDrop: (cubicleId: string, screenX: number, screenY: number) => {
       const rect = mountRef.current?.getBoundingClientRect();
-      if (!rect) return;
-      const ndc = new THREE.Vector2(
-        ((screenX - rect.left) / rect.width) * 2 - 1,
-        -((screenY - rect.top) / rect.height) * 2 + 1
-      );
-      raycasterRef.current.setFromCamera(ndc, cameraRef.current!);
-      const target = new THREE.Vector3();
-      raycasterRef.current.ray.intersectPlane(dragPlaneRef.current, target);
-      const x = snapToGrid(Math.max(-FLOOR_HALF + GRID_SIZE, Math.min(FLOOR_HALF - GRID_SIZE, target.x)));
-      const z = snapToGrid(Math.max(-FLOOR_HALF + GRID_SIZE, Math.min(FLOOR_HALF - GRID_SIZE, target.z)));
-      const existing = cubicles.find(c => c.id === cubicleId);
-      if (existing) {
-        onCubicleUpdate({ ...existing, placed: true, position: [x, 0, z] });
+      const cam = cameraRef.current;
+      const existing = cubiclesRef.current.find(c => c.id === cubicleId);
+      if (!existing) return;
+
+      let x = 0, z = 0;
+
+      if (rect && cam) {
+        const ndc = new THREE.Vector2(
+          ((screenX - rect.left) / rect.width) * 2 - 1,
+          -((screenY - rect.top) / rect.height) * 2 + 1
+        );
+        raycasterRef.current.setFromCamera(ndc, cam);
+        const target = new THREE.Vector3();
+        const hit = raycasterRef.current.ray.intersectPlane(dragPlaneRef.current, target);
+        if (hit) {
+          x = snapToGrid(Math.max(-FLOOR_HALF + GRID_SIZE, Math.min(FLOOR_HALF - GRID_SIZE, target.x)));
+          z = snapToGrid(Math.max(-FLOOR_HALF + GRID_SIZE, Math.min(FLOOR_HALF - GRID_SIZE, target.z)));
+        }
+        // If raycast fails (hit is null) we fall through to x=0,z=0 default
       }
+
+      // Immediately add the 3D object to the scene so user sees it right away
+      const scene = sceneRef.current;
+      if (scene && !cubicleObjectsRef.current.has(cubicleId)) {
+        const updatedData = { ...existing, placed: true, position: [x, 0, z] as [number, number, number] };
+        const obj = buildCubicleObject(updatedData);
+        scene.add(obj);
+        cubicleObjectsRef.current.set(cubicleId, obj);
+      } else if (cubicleObjectsRef.current.has(cubicleId)) {
+        // Already exists — just move it
+        const obj = cubicleObjectsRef.current.get(cubicleId)!;
+        obj.position.set(x, 0, z);
+      }
+
+      // Then propagate state update to React
+      onCubicleUpdateRef.current({ ...existing, placed: true, position: [x, 0, z] });
     },
   }));
 
