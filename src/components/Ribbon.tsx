@@ -1,12 +1,11 @@
 'use client';
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 import {
   Bell,
-  User,
   Palette,
   ChevronDown,
-  FlaskConical,
   Check,
 } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
