@@ -325,13 +325,15 @@ const ThreeFloor = forwardRef<FloorRef, Props>(function ThreeFloor(
       });
       ro.observe(mountRef.current);
 
-    return () => {
-      cancelAnimationFrame(frameId);
-      if (resizeRaf) cancelAnimationFrame(resizeRaf);
-      ro.disconnect();
-      renderer.dispose();
-      mountRef.current?.removeChild(renderer.domElement);
-    };
+      return () => {
+        cancelAnimationFrame(frameId);
+        if (resizeRaf) cancelAnimationFrame(resizeRaf);
+        ro.disconnect();
+        canvas.removeEventListener('dragover', onCanvasDragOver);
+        canvas.removeEventListener('drop', onCanvasDrop);
+        renderer.dispose();
+        mountRef.current?.removeChild(renderer.domElement);
+      };
   }, []);
 
   // Update camera from orbit
