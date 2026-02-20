@@ -287,6 +287,7 @@ const ThreeFloor = forwardRef<FloorRef, Props>(function ThreeFloor(
 
     return () => {
       cancelAnimationFrame(frameId);
+      if (resizeRaf) cancelAnimationFrame(resizeRaf);
       ro.disconnect();
       renderer.dispose();
       mountRef.current?.removeChild(renderer.domElement);
