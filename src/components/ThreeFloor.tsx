@@ -64,6 +64,14 @@ const ThreeFloor = forwardRef<FloorRef, Props>(function ThreeFloor(
   const [returnConfirm, setReturnConfirm] = useState<string | null>(null);
   const router = useRouter();
 
+  // Keep a stable ref to the latest cubicles array so imperative handles don't go stale
+  const cubiclesRef = useRef<CubicleData[]>(cubicles);
+  useEffect(() => { cubiclesRef.current = cubicles; }, [cubicles]);
+
+  // Keep a stable ref to onCubicleUpdate
+  const onCubicleUpdateRef = useRef(onCubicleUpdate);
+  useEffect(() => { onCubicleUpdateRef.current = onCubicleUpdate; }, [onCubicleUpdate]);
+
   // orbit state
   const orbitRef = useRef({ theta: 0.6, phi: 1.1, radius: 18, isDragging: false, lastX: 0, lastY: 0 });
 
