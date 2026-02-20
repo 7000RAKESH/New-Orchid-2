@@ -268,14 +268,46 @@ const ThreeFloor = forwardRef<FloorRef, Props>(function ThreeFloor(
     border.position.y = 0.02;
     scene.add(border);
 
-    // Render loop
-    let frameId: number;
-    function animate() {
-      frameId = requestAnimationFrame(animate);
-      renderer.render(scene, camera);
-    }
-    animate();
-    animFrameRef.current = frameId!;
+      // Render loop
+      let frameId: number;
+      function animate() {
+        frameId = requestAnimationFrame(animate);
+        renderer.render(scene, camera);
+      }
+      animate();
+      animFrameRef.current = frameId!;
+
+      // Allow HTML5 drag-drop directly onto the WebGL canvas
+      const canvas = renderer.domElement;
+      const onCanvasDragOver = (e: DragEvent) => { e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'; };
+      const onCanvasDrop = (e: DragEvent) => {
+        e.preventDefault();
+        const id = e.dataTransfer?.getData('cubicleId');
+        if (!id) return;
+        const rect = canvas.getBoundingClientRect();
+        const ndc = new THREE.Vector2(
+          ((e.clientX - rect.left) / rect.width) * 2 - 1,
+          -((e.clientY - rect.top) / rect.height) * 2 + 1
+        );
+        raycasterRef.current.setFromCamera(ndc, camera);
+        const target = new THREE.Vector3();
+        const hit = raycasterRef.current.ray.intersectPlane(dragPlaneRef.current, target);
+        const x = hit ? snapToGrid(Math.max(-FLOOR_HALF + GRID_SIZE, Math.min(FLOOR_HALF - GRID_SIZE, target.x))) : 0;
+        const z = hit ? snapToGrid(Math.max(-FLOOR_HALF + GRID_SIZE, Math.min(FLOOR_HALF - GRID_SIZE, target.z))) : 0;
+        const existing = cubiclesRef.current.find(c => c.id === id);
+        if (!existing) return;
+        // Immediately show on 3D scene
+        if (!cubicleObjectsRef.current.has(id)) {
+          const obj = buildCubicleObject({ ...existing, placed: true, position: [x, 0, z] });
+          scene.add(obj);
+          cubicleObjectsRef.current.set(id, obj);
+        } else {
+          cubicleObjectsRef.current.get(id)!.position.set(x, 0, z);
+        }
+        onCubicleUpdateRef.current({ ...existing, placed: true, position: [x, 0, z] });
+      };
+      canvas.addEventListener('dragover', onCanvasDragOver);
+      canvas.addEventListener('drop', onCanvasDrop);
 
       // Resize — debounce via rAF to avoid ResizeObserver loop warnings
       let resizeRaf: number | undefined;
